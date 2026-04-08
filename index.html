@@ -1,0 +1,94 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Studio</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;700;900&family=M+PLUS+Rounded+1c:wght@400;700;900&family=Kaisei+Tokumin:wght@400;700&family=Shippori+Mincho:wght@400;700&family=Dela+Gothic+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#6366f1",
+                        "primary-hover": "#4f46e5",
+                        "background-light": "#f1f5f9",
+                        "background-dark": "#1a202c",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#2d3748",
+                        "border-light": "#cbd5e1",
+                        "border-dark": "#4a5568",
+                        "text-light": "#1e293b",
+                        "text-dark": "#e2e8f0",
+                        "secondary-text-light": "#64748b",
+                        "secondary-text-dark": "#a0aec0",
+                        "success": "#10b981",
+                        "teal-light": "#2dd4bf",
+                        "teal-dark": "#14b8a6",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        japanese: ["Noto Sans JP", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        'lg': '0.75rem',
+                        'xl': '1rem',
+                        '2xl': '1.5rem',
+                    },
+                },
+            },
+        };
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .range-thumb-lg::-webkit-slider-thumb {
+                @apply w-5 h-5 bg-primary shadow-lg border-2 border-white cursor-pointer appearance-none rounded-full transition-transform hover:scale-110;
+            }
+            .range-track-lg {
+                @apply h-2 bg-gray-200 dark:bg-slate-700 rounded-full;
+            }
+            .no-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .no-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]:focus { outline: none; }
+        .preview-bg {
+            background-color: #f1f5f9;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .dark .preview-bg {
+            background-color: #1a202c;
+            background-image: radial-gradient(#4a5568 1px, transparent 1px);
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.35.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
