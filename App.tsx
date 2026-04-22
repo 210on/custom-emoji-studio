@@ -8,6 +8,7 @@ import { analyzeAccessibility } from './services/geminiService';
 const STORAGE_KEY = 'custom-emoji-studio-state-v1';
 const CUSTOM_COLOR_SLOT_COUNT = 6;
 const MAX_STROKE_WIDTH = 30;
+const DEFAULT_SPACING = -50;
 
 interface PreviewSurfaceState {
   light: string;
@@ -32,7 +33,7 @@ const defaultConfig: EmojiConfig = {
   stroke2Color: '#FFFFFF',
   stroke2Width: 16,
   autoSquare: false,
-  spacing: 0,
+  spacing: DEFAULT_SPACING,
 };
 
 const defaultMetrics: ScoreMetrics = {
@@ -66,7 +67,7 @@ const normalizeSavedEmoji = (saved: SavedEmoji): EmojiConfig => ({
   stroke2Color: saved.stroke2Color,
   stroke2Width: clampStrokeWidth(saved.stroke2Width),
   autoSquare: saved.autoSquare,
-  spacing: saved.spacing,
+  spacing: saved.spacing ?? DEFAULT_SPACING,
 });
 
 const loadStoredState = () => {

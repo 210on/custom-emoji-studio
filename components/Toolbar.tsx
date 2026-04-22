@@ -28,6 +28,7 @@ const colorPresets = [
 
 const uploadFontOptionValue = '__upload_font__';
 const validHexColor = /^#([0-9A-F]{6})$/i;
+const SPACING_DISPLAY_OFFSET = -50;
 
 const sectionClass =
   'rounded-[1.3rem] border border-slate-200/80 bg-slate-50/80 p-2.5 dark:border-slate-800 dark:bg-slate-900/70';
@@ -92,6 +93,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
     onValueChange: (next: number) => void,
     step = 1,
     density: ControlDensity = 'full',
+    displayValue = value,
   ) => {
     const isCompact = density === 'compact';
     const isMobile = density === 'mobile';
@@ -100,7 +102,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
     <label className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-3">
         <span className={`font-bold text-slate-500 dark:text-slate-400 ${isCompact ? 'text-xs' : isMobile ? 'text-sm' : 'text-sm'}`}>{label}</span>
-        <span className={`font-black text-slate-900 dark:text-white ${isCompact ? 'text-xs' : isMobile ? 'text-base' : 'text-sm'}`}>{value}</span>
+        <span className={`font-black text-slate-900 dark:text-white ${isCompact ? 'text-xs' : isMobile ? 'text-base' : 'text-sm'}`}>{displayValue}</span>
       </div>
       <input
         type="range"
@@ -231,8 +233,16 @@ const Toolbar: React.FC<ToolbarProps> = ({
   const renderSizeControls = (density: ControlDensity = 'full') => (
     <div className="flex flex-col gap-2">
       {renderSlider(lang === 'jp' ? '字間' : 'Letter Spacing', config.letterSpacing, -20, 48, (value) => onChange({ letterSpacing: value }), 1, density)}
-      {renderSlider(t.spacing, config.spacing, -80, 80, (value) => onChange({ spacing: value }), 1, density)}
-      {renderSlider(t.stretch, config.condense, 60, 140, (value) => onChange({ condense: value }), 1, density)}
+      {renderSlider(
+        t.spacing,
+        config.spacing - SPACING_DISPLAY_OFFSET,
+        -80,
+        80,
+        (value) => onChange({ spacing: value + SPACING_DISPLAY_OFFSET }),
+        1,
+        density,
+      )}
+      {renderSlider(t.stretch, config.condense, 60, 140, (value) => onChange({ condense: value }), 10, density)}
     </div>
   );
 
