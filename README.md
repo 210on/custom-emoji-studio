@@ -100,6 +100,29 @@ npm run lint
 npm run build
 ```
 
+## GitHub Pages 公開
+
+このリポジトリには GitHub Pages 向けの自動デプロイ workflow を含めています。  
+`main` へ push すると、GitHub Actions が `dist` をビルドして Pages に公開します。
+
+想定公開URL:
+
+- [https://210on.github.io/custom-emoji-studio/](https://210on.github.io/custom-emoji-studio/)
+
+初回のみ GitHub 側で次を設定してください。
+
+1. `Settings`
+2. `Pages`
+3. `Build and deployment` の `Source` を `GitHub Actions` に変更
+
+Gemini を公開環境でも有効にしたい場合は、リポジトリの `Settings` → `Secrets and variables` → `Actions` に次のシークレットを追加してください。
+
+```text
+VITE_GEMINI_API_KEY=your_api_key_here
+```
+
+API キーを設定しなくても公開は可能で、その場合はルールベース診断が動作します。
+
 ## ディレクトリ構成
 
 ```text
