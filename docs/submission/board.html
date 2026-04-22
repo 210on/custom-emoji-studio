@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Custom Emoji Studio Submission Board</title>
+  <style>
+    :root {
+      --bg: #eef2ff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: rgba(148, 163, 184, 0.22);
+      --panel: rgba(255, 255, 255, 0.92);
+      --accent: #4f46e5;
+      --accent-soft: #eef2ff;
+      --shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, "Noto Sans JP", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(79, 70, 229, 0.14), transparent 30%),
+        linear-gradient(180deg, #f8fafc, var(--bg));
+    }
+
+    .board {
+      width: 1600px;
+      margin: 0 auto;
+      padding: 48px;
+    }
+
+    .hero,
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 36px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .hero {
+      padding: 42px 44px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 22px 0 14px;
+      font-size: 64px;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 26px;
+      line-height: 1.6;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .metric {
+      padding: 18px 20px;
+      border-radius: 24px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    .metric b {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 18px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.5;
+    }
+
+    .shot-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 24px;
+      position: relative;
+      min-height: 520px;
+    }
+
+    .screen {
+      border-radius: 30px;
+      overflow: hidden;
+      background: white;
+      border: 1px solid #dbe4f0;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+    }
+
+    .screen.desktop {
+      width: 760px;
+    }
+
+    .screen.mobile {
+      width: 240px;
+      position: absolute;
+      right: 10px;
+      bottom: -24px;
+    }
+
+    .screen img {
+      width: 100%;
+      display: block;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .panel {
+      padding: 28px;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 34px;
+      letter-spacing: -0.03em;
+    }
+
+    .panel p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 20px;
+      line-height: 1.7;
+    }
+
+    .diagram {
+      width: 100%;
+      border-radius: 24px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      background: #f8fafc;
+    }
+
+    .footer {
+      margin-top: 24px;
+      padding: 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .statement {
+      padding: 24px;
+      border-radius: 28px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    .statement h3 {
+      margin: 0 0 12px;
+      font-size: 24px;
+    }
+
+    .statement p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 20px;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+  <main class="board">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Design Research System</div>
+        <h1>Custom Emoji Studio</h1>
+        <p class="lead">
+          チャットアプリ向けの文字絵文字を対象に、<b>視認性評価</b>と<b>直感的な編集操作</b>を統合した研究支援システム。
+          ライト / ダーク両背景での見え方を確認しながら、文字・縁取り・色の調整とPNG書き出しを行える。
+        </p>
+        <div class="hero-grid">
+          <div class="metric">
+            <b>視認性評価の有効性</b>
+            <span>APCAコントラスト、縮小耐性、AIによる文字複雑性診断を同一画面で提示。</span>
+          </div>
+          <div class="metric">
+            <b>出力精度</b>
+            <span>プレビューとPNG書き出しが同一描画ロジックを共有し、見えの差を抑制。</span>
+          </div>
+          <div class="metric">
+            <b>UI直感性</b>
+            <span>見る、判断する、調整する、の流れで情報を配置して操作負荷を低減。</span>
+          </div>
+          <div class="metric">
+            <b>マルチデバイス性</b>
+            <span>PCでは左右分割、モバイルでは縦積みの操作導線に最適化。</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot-wrap">
+        <div class="screen desktop">
+          <img src="./assets/desktop-preview.png" alt="Desktop Preview" />
+        </div>
+        <div class="screen mobile">
+          <img src="./assets/mobile-preview.png" alt="Mobile Preview" />
+        </div>
+      </div>
+    </section>
+
+    <section class="row">
+      <article class="panel">
+        <h2>図版 1. 出力精度</h2>
+        <p>
+          文字列、縁取り、色などの編集設定を単一の描画ロジックに通すことで、
+          操作中のプレビューと最終書き出し結果の差を減らしている。
+        </p>
+        <img class="diagram" src="./diagram-output-accuracy.svg" alt="Output Accuracy Diagram" />
+      </article>
+
+      <article class="panel">
+        <h2>図版 2. UI直感性</h2>
+        <p>
+          プレビュー、評価、調整の順に情報を見せることで、視認性を意識した試行錯誤を短い導線で行えるようにしている。
+        </p>
+        <img class="diagram" src="./diagram-ui-intuitiveness.svg" alt="UI Intuitiveness Diagram" />
+      </article>
+    </section>
+
+    <section class="hero footer">
+      <div class="statement">
+        <h3>短い作品説明文</h3>
+        <p>
+          Custom Emoji Studio は、チャットアプリ向け文字絵文字の制作と視認性評価を統合した研究支援システムである。
+          ライト / ダーク背景での見え方を確認しながら、文字装飾の調整とPNG出力を一貫して行える。
+        </p>
+      </div>
+      <div class="statement">
+        <h3>研究的な意義</h3>
+        <p>
+          本システムは、文字絵文字の「作りやすさ」だけでなく、「小サイズで読めるか」「UI上で評価しやすいか」を同時に扱うことで、
+          デザイン支援と評価支援を接続する。
+        </p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

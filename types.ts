@@ -8,6 +8,7 @@ export interface EmojiConfig {
   fontFamily: string;
   fontWeight: number;
   condense: number;
+  letterSpacing: number;
   mainColor: string;
   textAlign: TextAlign;
   // Stroke 1 (Inner)

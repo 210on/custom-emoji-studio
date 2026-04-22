@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ScoreMetrics, Language } from '../types';
 import { locales } from '../locales';
@@ -11,88 +10,110 @@ interface DesignDiagnosisProps {
   lang: Language;
 }
 
-const DesignDiagnosis: React.FC<DesignDiagnosisProps> = ({ metrics, tip, isAnalyzing, onRefresh, lang }) => {
+const DesignDiagnosis: React.FC<DesignDiagnosisProps> = ({
+  metrics,
+  tip,
+  isAnalyzing,
+  onRefresh,
+  lang,
+}) => {
   const t = locales[lang];
-  
-  const getStatusColor = (score: number) => {
-    if (score >= 90) return 'text-emerald-600 bg-emerald-100 dark:text-emerald-500 dark:bg-emerald-500/10';
-    if (score >= 70) return 'text-amber-600 bg-amber-100 dark:text-amber-500 dark:bg-amber-500/10';
-    return 'text-rose-600 bg-rose-100 dark:text-rose-500 dark:bg-rose-500/10';
-  };
 
   const getStatusLabel = (score: number) => {
-    if (score >= 90) return t.excellent;
-    if (score >= 70) return t.good;
+    if (metrics.contrastRatio >= 75 && metrics.scalability >= 82 && score >= 84) return t.excellent;
+    if (metrics.contrastRatio >= 60 && metrics.scalability >= 72 && score >= 70) return t.good;
     return t.needsWork;
   };
 
-  const radius = 36;
+  const radius = 34;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (metrics.legibility / 100) * circumference;
+  const ringColor =
+    metrics.contrastRatio >= 75 && metrics.scalability >= 82 && metrics.legibility >= 84
+      ? 'text-emerald-500'
+      : metrics.contrastRatio >= 60 && metrics.scalability >= 72 && metrics.legibility >= 70
+        ? 'text-amber-500'
+        : 'text-rose-500';
 
   return (
-    <div className="w-full bg-white dark:bg-slate-900 rounded-[1.5rem] shadow-md border border-slate-200 dark:border-slate-800 p-6 flex flex-col gap-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-sm font-black text-slate-800 dark:text-slate-100">{t.accessibility}</h2>
-        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${getStatusColor(metrics.legibility)}`}>
-          {getStatusLabel(metrics.legibility)}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-6">
-        <div className="relative w-24 h-24 shrink-0">
-          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r={radius} stroke="currentColor" strokeWidth="10" fill="transparent" className="text-slate-100 dark:text-slate-800" />
-            <circle 
-              cx="50" cy="50" r={radius} stroke="currentColor" strokeWidth="10" fill="transparent"
-              strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round"
-              className={`transition-all duration-1000 ease-out ${metrics.legibility >= 90 ? 'text-emerald-500' : metrics.legibility >= 70 ? 'text-amber-500' : 'text-rose-500'}`}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{metrics.legibility}</span>
-            <span className="text-[8px] font-black text-slate-500 uppercase">Score</span>
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col gap-4">
-          <div>
-            <div className="flex justify-between items-center mb-1.5">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.contrast}</span>
-              <span className="text-xs font-black text-slate-900 dark:text-white">Lc {metrics.contrastRatio}</span>
-            </div>
-            <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div 
-                className={`h-full transition-all duration-1000 ${metrics.contrastRatio > 75 ? 'bg-emerald-500' : metrics.contrastRatio > 45 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                style={{ width: `${Math.min((metrics.contrastRatio / 90) * 100, 100)}%` }}
-              ></div>
+    <section className="rounded-[1.7rem] border border-slate-200/80 bg-white/92 p-4 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/92 lg:min-h-[220px]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-4">
+          <div className="relative h-20 w-20 shrink-0 lg:h-24 lg:w-24">
+            <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r={radius} stroke="currentColor" strokeWidth="9" fill="transparent" className="text-slate-100 dark:text-slate-800" />
+              <circle
+                cx="50"
+                cy="50"
+                r={radius}
+                stroke="currentColor"
+                strokeWidth="9"
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+                className={`transition-all duration-700 ${ringColor}`}
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-2xl font-black text-slate-900 dark:text-white lg:text-3xl">{metrics.legibility}</span>
             </div>
           </div>
 
-          <div>
-            <div className="flex justify-between items-center mb-1.5">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.scale}</span>
-              <span className="text-xs font-black text-slate-900 dark:text-white">{metrics.scalability}%</span>
+          <div className="min-w-0">
+            <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">{getStatusLabel(metrics.legibility)}</div>
+            <div className="mt-2 grid grid-cols-2 gap-x-5 gap-y-2 text-base font-black text-slate-900 dark:text-white lg:text-lg">
+              <span>{`Lc ${metrics.contrastRatio}`}</span>
+              <span>{`${metrics.scalability}%`}</span>
             </div>
-            <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div 
-                className={`h-full transition-all duration-1000 ${metrics.scalability > 80 ? 'bg-indigo-500' : metrics.scalability > 60 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                style={{ width: `${metrics.scalability}%` }}
-              ></div>
+            <div className="mt-3 space-y-3">
+              <div>
+                <div className="mb-1 flex items-center justify-between text-xs font-black text-slate-400">
+                  <span>{t.contrast}</span>
+                  <span>{`Lc ${metrics.contrastRatio}`}</span>
+                </div>
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div
+                    className={`h-full transition-all duration-700 ${metrics.contrastRatio >= 75 ? 'bg-emerald-500' : metrics.contrastRatio >= 60 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                    style={{ width: `${Math.min((metrics.contrastRatio / 90) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-1 flex items-center justify-between text-xs font-black text-slate-400">
+                  <span>{t.scale}</span>
+                  <span>{`${metrics.scalability}%`}</span>
+                </div>
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div
+                    className={`h-full transition-all duration-700 ${metrics.scalability >= 82 ? 'bg-emerald-500' : metrics.scalability >= 72 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                    style={{ width: `${metrics.scalability}%` }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
+        <button
+          onClick={onRefresh}
+          disabled={isAnalyzing}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-indigo-300 hover:text-indigo-600 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:text-slate-300"
+          aria-label={t.refresh}
+        >
+          <span className={`material-symbols-outlined text-[20px] ${isAnalyzing ? 'animate-spin' : ''}`}>
+            refresh
+          </span>
+        </button>
       </div>
 
       {tip && (
-        <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 flex gap-3">
-          <span className="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[20px] shrink-0">lightbulb</span>
-          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-bold">
-            {tip}
-          </p>
+        <div className="mt-4 rounded-2xl bg-slate-100 px-3 py-2.5 text-xs font-bold text-slate-600 dark:bg-slate-900 dark:text-slate-300 lg:text-sm">
+          {tip}
         </div>
       )}
-    </div>
+    </section>
   );
 };
 

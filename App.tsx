@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Header from './components/Header';
 import Toolbar from './components/Toolbar';
@@ -6,240 +5,341 @@ import PreviewSection from './components/PreviewSection';
 import { EmojiConfig, ScoreMetrics, Language, SavedEmoji } from './types';
 import { analyzeAccessibility } from './services/geminiService';
 
-// --- APCA & Math Utilities ---
+const STORAGE_KEY = 'custom-emoji-studio-state-v1';
+const CUSTOM_COLOR_SLOT_COUNT = 6;
+const MAX_STROKE_WIDTH = 30;
 
-// Convert Hex to sRGB Linear
+interface PreviewSurfaceState {
+  light: string;
+  dark: string;
+  customLight: string;
+  customDark: string;
+}
+
+const defaultConfig: EmojiConfig = {
+  textTop: 'あり',
+  textBottom: 'がと',
+  fontFamily: "'Noto Sans JP', sans-serif",
+  fontWeight: 900,
+  condense: 100,
+  letterSpacing: 0,
+  mainColor: '#FFCC00',
+  textAlign: 'center',
+  stroke1Enabled: true,
+  stroke1Color: '#000000',
+  stroke1Width: 4,
+  stroke2Enabled: true,
+  stroke2Color: '#FFFFFF',
+  stroke2Width: 16,
+  autoSquare: false,
+  spacing: 0,
+};
+
+const defaultMetrics: ScoreMetrics = {
+  legibility: 85,
+  contrastRatio: 90,
+  scalability: 95,
+};
+
+const defaultPreviewSurfaces: PreviewSurfaceState = {
+  light: '#FFFFFF',
+  dark: '#0B1120',
+  customLight: '#EEF2FF',
+  customDark: '#222529',
+};
+
+const clampStrokeWidth = (value: number) => Math.max(0, Math.min(MAX_STROKE_WIDTH, value));
+
+const normalizeSavedEmoji = (saved: SavedEmoji): EmojiConfig => ({
+  textTop: saved.textTop,
+  textBottom: saved.textBottom,
+  fontFamily: saved.fontFamily,
+  fontWeight: saved.fontWeight,
+  condense: saved.condense,
+  letterSpacing: saved.letterSpacing ?? 0,
+  mainColor: saved.mainColor,
+  textAlign: saved.textAlign,
+  stroke1Enabled: saved.stroke1Enabled,
+  stroke1Color: saved.stroke1Color,
+  stroke1Width: clampStrokeWidth(saved.stroke1Width),
+  stroke2Enabled: saved.stroke2Enabled,
+  stroke2Color: saved.stroke2Color,
+  stroke2Width: clampStrokeWidth(saved.stroke2Width),
+  autoSquare: saved.autoSquare,
+  spacing: saved.spacing,
+});
+
+const loadStoredState = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.warn('Failed to load local state:', error);
+    return null;
+  }
+};
+
+const normalizeCustomColorSlots = (slots: unknown): string[] => {
+  if (!Array.isArray(slots)) {
+    return Array(CUSTOM_COLOR_SLOT_COUNT).fill('');
+  }
+
+  const validHex = /^#([0-9A-F]{6})$/i;
+
+  return Array.from({ length: CUSTOM_COLOR_SLOT_COUNT }, (_, index) => {
+    const value = typeof slots[index] === 'string' ? slots[index].trim().toUpperCase() : '';
+    return validHex.test(value) ? value : '';
+  });
+};
+
+const normalizePreviewSurfaces = (value: unknown): PreviewSurfaceState => {
+  const validHex = /^#([0-9A-F]{6})$/i;
+  const source = typeof value === 'object' && value !== null ? value as Record<string, unknown> : {};
+  const read = (key: keyof PreviewSurfaceState, fallback: string) => {
+    const raw = typeof source[key] === 'string' ? source[key].trim().toUpperCase() : fallback;
+    return validHex.test(raw) ? raw : fallback;
+  };
+
+  return {
+    light: read('light', defaultPreviewSurfaces.light),
+    dark: read('dark', defaultPreviewSurfaces.dark),
+    customLight: read('customLight', defaultPreviewSurfaces.customLight),
+    customDark: read('customDark', defaultPreviewSurfaces.customDark),
+  };
+};
+
 const hexToLinear = (hex: string) => {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
-  // Simple power curve estimation for gamma correction (approximate for performance)
+
   return {
     r: Math.pow(r, 2.4),
     g: Math.pow(g, 2.4),
-    b: Math.pow(b, 2.4)
+    b: Math.pow(b, 2.4),
   };
 };
 
-// Calculate Luminance (Y)
-const getLuminance = (rgb: { r: number, g: number, b: number }) => {
+const getLuminance = (rgb: { r: number; g: number; b: number }) => {
   return 0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b;
 };
 
-// Calculate APCA (Lc)
-// Based on simplified APCA logic for UI scoring
 const calculateAPCA = (fgHex: string, bgHex: string): number => {
   const txt = getLuminance(hexToLinear(fgHex));
   const bg = getLuminance(hexToLinear(bgHex));
 
-  let contrast = 0;
-  
-  if (bg > txt) {
-    // Dark text on Light background
-    // SAPC Basic simplified
-    contrast = (Math.pow(bg, 0.56) - Math.pow(txt, 0.57)) * 100;
-  } else {
-    // Light text on Dark background
-    contrast = (Math.pow(bg, 0.65) - Math.pow(txt, 0.62)) * 100;
-  }
-  
+  const contrast = bg > txt
+    ? (Math.pow(bg, 0.56) - Math.pow(txt, 0.57)) * 100
+    : (Math.pow(bg, 0.65) - Math.pow(txt, 0.62)) * 100;
+
   return Math.abs(contrast);
 };
 
-// Calculate Scalability (Geometric)
 const calculateScalability = (config: EmojiConfig): number => {
   let score = 100;
-  const charCount = (config.textTop.length + config.textBottom.length);
-  
-  // 1. Character Density Penalty
-  // 1-2 chars: Perfect. 3-4: Okay. 5+: Bad.
-  if (charCount > 2) score -= (charCount - 2) * 12;
+  const charCount = config.textTop.length + config.textBottom.length;
 
-  // 2. Weight Bonus/Penalty
-  // At 24px, thin fonts disappear. Bold is better.
+  if (charCount > 2) score -= (charCount - 2) * 12;
   if (config.fontWeight < 400) score -= 20;
   if (config.fontWeight >= 700) score += 5;
 
-  // 3. Stroke "Choking" Penalty
-  // If inner stroke is too thick relative to font size (estimated), it chokes legibility.
   if (config.stroke1Enabled && config.stroke1Width > 8 && config.fontWeight > 500) {
     score -= 15;
   }
 
-  // 4. Border Benefit
-  // A moderate outer border helps define shape at small sizes.
   if (config.stroke2Enabled && config.stroke2Width >= 2) {
     score += 10;
   } else {
-    // No border implies text might blend into random chat backgrounds
-    score -= 10; 
+    score -= 10;
   }
 
-  // Clamp 0-100
   return Math.max(0, Math.min(100, Math.round(score)));
 };
 
+const calculateMathMetrics = (config: EmojiConfig) => {
+  const scalability = calculateScalability(config);
+
+  let contrastRatio = 0;
+
+  if (config.stroke2Enabled && config.stroke2Width > 2) {
+    contrastRatio = config.stroke1Enabled && config.stroke1Width > 2
+      ? calculateAPCA(config.mainColor, config.stroke1Color)
+      : calculateAPCA(config.mainColor, config.stroke2Color);
+  } else if (config.stroke1Enabled && config.stroke1Width > 2) {
+    contrastRatio = calculateAPCA(config.mainColor, config.stroke1Color);
+  } else {
+    const onWhite = calculateAPCA(config.mainColor, '#FFFFFF');
+    const onBlack = calculateAPCA(config.mainColor, '#000000');
+    contrastRatio = Math.min(onWhite, onBlack);
+  }
+
+  return {
+    contrastRatio: Math.round(contrastRatio),
+    scalability,
+  };
+};
+
 const App: React.FC = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [lang, setLang] = useState<Language>('jp');
+  const storedStateRef = useRef(loadStoredState());
+  const storedState = storedStateRef.current;
+
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(storedState?.isDarkMode ?? false);
+  const [lang, setLang] = useState<Language>(storedState?.lang ?? 'jp');
   const [config, setConfig] = useState<EmojiConfig>({
-    textTop: 'おき',
-    textBottom: 'た!!',
-    fontFamily: "'Noto Sans JP', sans-serif",
-    fontWeight: 900,
-    condense: 100,
-    mainColor: '#FFD700', 
-    textAlign: 'center',
-    stroke1Enabled: true,
-    stroke1Color: '#000000',
-    stroke1Width: 4,
-    stroke2Enabled: true,
-    stroke2Color: '#FFFFFF',
-    stroke2Width: 16,
-    autoSquare: false,
-    spacing: 12,
+    ...defaultConfig,
+    ...(storedState?.config ?? {}),
+    stroke1Width: clampStrokeWidth(storedState?.config?.stroke1Width ?? defaultConfig.stroke1Width),
+    stroke2Width: clampStrokeWidth(storedState?.config?.stroke2Width ?? defaultConfig.stroke2Width),
   });
-
-  const [metrics, setMetrics] = useState<ScoreMetrics>({
-    legibility: 85,
-    contrastRatio: 90, // Now represents Lc value
-    scalability: 95,
-  });
-
-  const [history, setHistory] = useState<SavedEmoji[]>([]);
-
-  const [aiTip, setAiTip] = useState<string>("Initializing design engine...");
+  const [customColorSlots, setCustomColorSlots] = useState<string[]>(
+    normalizeCustomColorSlots(storedState?.customColorSlots),
+  );
+  const [previewSurfaces, setPreviewSurfaces] = useState<PreviewSurfaceState>(
+    normalizePreviewSurfaces(storedState?.previewSurfaces),
+  );
+  const [metrics, setMetrics] = useState<ScoreMetrics>(defaultMetrics);
+  const [history, setHistory] = useState<SavedEmoji[]>(storedState?.history ?? []);
+  const [aiTip, setAiTip] = useState<string>(
+    storedState?.lang === 'en'
+      ? 'The AI feedback updates automatically when you change the design.'
+      : 'デザインを変更するとAIフィードバックが自動で更新されます。'
+  );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   const previewRef = useRef<{ exportPng: () => void }>(null);
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ isDarkMode, lang, config, history, customColorSlots, previewSurfaces }),
+      );
+    } catch (error) {
+      console.warn('Failed to store local state:', error);
+    }
+  }, [config, customColorSlots, history, isDarkMode, lang, previewSurfaces]);
+
   const handleConfigChange = (newConfig: Partial<EmojiConfig>) => {
-    setConfig(prev => ({ ...prev, ...newConfig }));
+    setConfig((prev) => ({ ...prev, ...newConfig }));
   };
 
   const handleSave = () => {
     const newSaved: SavedEmoji = {
       ...config,
       id: Date.now().toString(),
-      name: `${config.textTop} ${config.textBottom}`,
-      createdAt: new Date().toISOString()
+      name: `${config.textTop}${config.textBottom}`,
+      createdAt: new Date().toISOString(),
     };
-    setHistory(prev => [newSaved, ...prev].slice(0, 10)); // Keep last 10
+
+    setHistory((prev) => [newSaved, ...prev].slice(0, 12));
   };
 
   const performMathAnalysis = useCallback(() => {
-    // 1. Scalability (Deterministic)
-    const scaleScore = calculateScalability(config);
+    const nextMetrics = calculateMathMetrics(config);
 
-    // 2. Contrast (APCA)
-    // We compare Main Text Color vs The immediate neighbor.
-    // If Outer Stroke exists -> Main vs Outer Stroke (This is the critical edge for the text shape).
-    // If Inner Stroke exists & No Outer -> Main vs Inner Stroke.
-    // If No Strokes -> Main vs White/Black average (worst case simulation).
-    let contrastScore = 0;
-
-    if (config.stroke2Enabled && config.stroke2Width > 2) {
-      // Logic: The text sits on top of the outer stroke visually or is surrounded by it.
-      // Actually, for readability, we usually check FG vs BG.
-      // Here, the 'Background' for the text face is effectively the stroke if the stroke is thick.
-      // Or, we check Main Color vs Stroke 1 (if enabled)
-      if (config.stroke1Enabled && config.stroke1Width > 2) {
-         contrastScore = calculateAPCA(config.mainColor, config.stroke1Color);
-      } else {
-         contrastScore = calculateAPCA(config.mainColor, config.stroke2Color);
-      }
-    } else if (config.stroke1Enabled && config.stroke1Width > 2) {
-      contrastScore = calculateAPCA(config.mainColor, config.stroke1Color);
-    } else {
-      // No protective strokes. Compare against typical Light/Dark mode backgrounds.
-      // Take the lower (safer) score.
-      const onWhite = calculateAPCA(config.mainColor, '#FFFFFF');
-      const onBlack = calculateAPCA(config.mainColor, '#000000');
-      contrastScore = Math.min(onWhite, onBlack);
-    }
-
-    setMetrics(prev => ({
+    setMetrics((prev) => ({
       ...prev,
-      contrastRatio: Math.round(contrastScore),
-      scalability: scaleScore
+      ...nextMetrics,
     }));
   }, [config]);
 
-  // Run math analysis instantly on every change
   useEffect(() => {
     performMathAnalysis();
   }, [performMathAnalysis]);
 
   const runAiAnalysis = useCallback(async () => {
     setIsAnalyzing(true);
+    const nextMetrics = calculateMathMetrics(config);
+
     try {
       const result = await analyzeAccessibility(
-        config.textTop + config.textBottom, 
+        `${config.textTop}${config.textBottom}`,
         config,
-        lang
+        lang,
+        nextMetrics,
       );
-      
-      setMetrics(prev => ({
+
+      setMetrics((prev) => ({
         ...prev,
-        legibility: result.score, // AI provides the "Human Perception / Kanji Complexity" score
+        legibility: result.score,
       }));
       setAiTip(result.tip);
     } catch (error) {
-      console.error("AI Analysis failed", error);
+      console.error('AI Analysis failed', error);
     } finally {
       setIsAnalyzing(false);
     }
-  }, [config, lang]); 
+  }, [config, lang]);
 
-  // Debounced AI analysis
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       runAiAnalysis();
     }, 1200);
-    return () => clearTimeout(timer);
-  }, [config.textTop, config.textBottom, config.mainColor, config.fontFamily, lang, runAiAnalysis]);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    config.textTop,
+    config.textBottom,
+    config.mainColor,
+    config.fontFamily,
+    config.fontWeight,
+    config.spacing,
+    config.stroke1Enabled,
+    config.stroke1Color,
+    config.stroke1Width,
+    config.stroke2Enabled,
+    config.stroke2Color,
+    config.stroke2Width,
+    config.letterSpacing,
+    lang,
+    runAiAnalysis,
+  ]);
 
   return (
-    <div className="min-h-screen bg-slate-200 dark:bg-black transition-colors duration-500 font-display flex items-center justify-center lg:p-8">
-      {/* App Container - Centered on Large Screens */}
-      <div className="w-full h-screen lg:h-[92vh] lg:max-w-[1600px] flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 lg:rounded-[2rem] lg:shadow-2xl lg:ring-1 lg:ring-slate-900/5 dark:lg:ring-white/10">
-        <Header 
-          isDarkMode={isDarkMode} 
-          toggleDarkMode={() => setIsDarkMode(!isDarkMode)} 
+    <div className="h-screen overflow-hidden text-slate-900 dark:text-slate-100">
+      <div className="mx-auto flex h-screen max-w-[1440px] flex-col">
+        <Header
+          isDarkMode={isDarkMode}
+          toggleDarkMode={() => setIsDarkMode((prev) => !prev)}
           lang={lang}
-          toggleLang={() => setLang(l => l === 'en' ? 'jp' : 'en')}
+          toggleLang={() => setLang((prev) => (prev === 'en' ? 'jp' : 'en'))}
           onExport={() => previewRef.current?.exportPng()}
           onSave={handleSave}
         />
-        
-        <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
-          <PreviewSection 
-            ref={previewRef} 
-            config={config} 
-            onChange={handleConfigChange} 
-            lang={lang}
-            history={history}
-            onSelectHistory={(saved) => setConfig(saved)}
-            metrics={metrics}
-            aiTip={aiTip}
-            isAnalyzing={isAnalyzing}
-            onRefreshAi={runAiAnalysis}
-          />
-        </div>
 
-        <Toolbar 
-          config={config} 
-          onChange={handleConfigChange} 
-          onRunAiSuggest={() => {}} 
-          lang={lang}
-        />
+        <div className="flex-1 min-h-0 overflow-hidden px-3 py-3 pb-[18.75rem] sm:px-5 sm:py-4 sm:pb-[19.25rem] lg:px-6 lg:py-4 lg:pb-4">
+          <div className="mx-auto flex h-full max-w-6xl min-w-0 flex-col gap-4">
+            <Toolbar
+              config={config}
+              onChange={handleConfigChange}
+              lang={lang}
+              customColorSlots={customColorSlots}
+              onChangeCustomColorSlots={setCustomColorSlots}
+            />
+
+            <PreviewSection
+              ref={previewRef}
+              config={config}
+              lang={lang}
+              history={history}
+              previewSurfaces={previewSurfaces}
+              onPreviewSurfacesChange={setPreviewSurfaces}
+              onSelectHistory={(saved) => setConfig(normalizeSavedEmoji(saved))}
+              metrics={metrics}
+              aiTip={aiTip}
+              isAnalyzing={isAnalyzing}
+              onRefreshAi={runAiAnalysis}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

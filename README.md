@@ -1,20 +1,153 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Custom Emoji Studio
 
-# Run and deploy your AI Studio app
+修士研究向けの「テキストベース絵文字デザイン支援システム」です。  
+チャットアプリで使われるカスタム絵文字を対象に、文字レイアウト・縁取り・配色を調整しながら、視認性と縮小耐性をその場で評価できます。
 
-This contains everything you need to run your app locally.
+## 概要
 
-View your app in AI Studio: https://ai.studio/apps/abde00be-7424-4dbc-9ba2-b4f3eb9a9144
+このシステムは、以下の2系統で絵文字デザインを支援します。
 
-## Run Locally
+- 数理評価: APCAコントラストと縮小耐性を即時計算
+- AI評価: 文字の複雑さや意味の伝わりやすさを Gemini で補助診断
 
-**Prerequisites:**  Node.js
+主な用途は次の通りです。
 
+- チャット向けの文字絵文字デザイン制作
+- 視認性の高い文字装飾の比較実験
+- 研究発表・論文用のプロトタイプ検証
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 主な機能
+
+- ライト / ダーク両背景でのプレビュー
+- PNG書き出し
+- テキスト、フォント、サイズ、縁取り、色の編集
+- スタイル履歴の保存・復元
+- モバイルUIに最適化した編集パネル
+- AIによる読みやすさコメント
+
+## 技術構成
+
+- Vite
+- React 19
+- TypeScript
+- Tailwind CSS CDN
+- `@google/genai`
+
+## 評価ロジック
+
+### 1. APCAコントラスト
+
+文字色と縁取り色の関係から知覚コントラストを計算します。  
+縁取りが十分に機能している場合、実際のチャットUIで埋もれにくい設計になっているかを確認できます。
+
+### 2. 縮小耐性
+
+以下の要素をもとに幾何学的なスコアを算出します。
+
+- 文字数の多さ
+- フォントの太さ
+- 内側縁取りの太すぎ問題
+- 外側縁取りの有無
+
+### 3. AI診断
+
+Gemini によって次の観点を補助的に評価します。
+
+- 文字の画数や形状の複雑さ
+- 小サイズ表示時の読みにくさ
+- 意味の伝わりやすさ
+
+## セットアップ
+
+### 推奨環境
+
+- Node.js 20 以上
+- npm 9 以上
+
+注記: Node.js 18 でもビルドは通る場合がありますが、依存ライブラリ側は Node 20 以上を推奨しています。
+
+### インストール
+
+```bash
+npm install
+```
+
+### 環境変数
+
+ルートに `.env.local` を作成してください。
+
+```bash
+VITE_GEMINI_API_KEY=your_api_key_here
+```
+
+互換性のため `GEMINI_API_KEY` も読み込めますが、Vite では `VITE_` 接頭辞付きの利用を推奨します。
+
+### 開発サーバー
+
+```bash
+npm run dev
+```
+
+### 型チェック
+
+```bash
+npm run lint
+```
+
+### 本番ビルド
+
+```bash
+npm run build
+```
+
+## ディレクトリ構成
+
+```text
+.
+├── App.tsx
+├── components
+│   ├── ChatPreview.tsx
+│   ├── DesignDiagnosis.tsx
+│   ├── Header.tsx
+│   ├── PreviewSection.tsx
+│   └── Toolbar.tsx
+├── services
+│   └── geminiService.ts
+├── utils
+│   └── emojiCanvas.ts
+├── locales.ts
+├── types.ts
+└── index.html
+```
+
+## 研究用途での注意点
+
+- Gemini APIキーはフロントエンドから参照されるため、公開環境ではバックエンド経由化を推奨します
+- AI診断は補助評価であり、最終評価は数理指標やユーザテストと併用してください
+- 履歴はブラウザの `localStorage` に保存されます
+
+## 今回の整備内容
+
+- モバイル時の画面構成を再設計
+- 描画ロジックを共通化してプレビューと書き出しの差異を削減
+- APIキー未設定時のフォールバックを追加
+- 欠けていた `index.css` を追加
+- スタイル履歴復元時の状態汚染を防止
+
+## 今後の拡張案
+
+- 被験者実験向けログ保存
+- 複数案比較モード
+- AI提案による自動デザイン生成
+- バックエンド化によるAPIキー秘匿
+
+## ライセンス / 研究メモ
+
+このリポジトリが論文執筆に進む場合は、READMEとは別に以下を用意すると整理しやすいです。
+
+- 実験目的
+- 評価指標の定義
+- 被験者条件
+- 使用フォント条件
+- 制作タスク手順
+- 倫理的配慮とデータ管理方針
