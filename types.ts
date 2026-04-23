@@ -5,6 +5,7 @@ export type TextAlign = 'left' | 'center' | 'right';
 export interface EmojiConfig {
   textTop: string;
   textBottom: string;
+  lineSizeBalance: number;
   fontFamily: string;
   fontWeight: number;
   condense: number;

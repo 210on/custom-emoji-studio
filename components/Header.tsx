@@ -9,14 +9,23 @@ interface HeaderProps {
   lang: Language;
   toggleLang: () => void;
   onExport: () => void;
-  onSave: () => void;
+  onToggleSavedStyles: () => void;
+  isSavedStylesOpen: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleDarkMode, lang, toggleLang, onExport, onSave }) => {
+const Header: React.FC<HeaderProps> = ({
+  isDarkMode,
+  toggleDarkMode,
+  lang,
+  toggleLang,
+  onExport,
+  onToggleSavedStyles,
+  isSavedStylesOpen,
+}) => {
   const t = locales[lang];
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-white/70 bg-white/88 px-4 py-3 shadow-[0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all dark:border-slate-800/70 dark:bg-slate-950/88 sm:px-6">
+    <nav className="sticky top-0 z-40 border-b border-white/70 bg-white/88 px-4 py-3 shadow-[0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all dark:border-slate-700/70 dark:bg-[#151c28]/88 sm:px-6">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 sm:h-12 sm:w-12">
@@ -38,17 +47,21 @@ const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleDarkMode, lang, toggl
             {t.language}
           </button>
           <button
-            onClick={onSave}
+            onClick={onToggleSavedStyles}
             aria-label={t.save}
             title={t.saveHint}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 sm:h-11 sm:w-11"
+            aria-expanded={isSavedStylesOpen}
+            className={`inline-flex items-center gap-2 rounded-full border bg-white px-3 py-2.5 text-xs font-black text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-[#111827] dark:text-slate-300 sm:px-4 sm:text-sm ${
+              isSavedStylesOpen ? 'border-indigo-300 text-indigo-600 dark:text-indigo-300' : 'border-slate-200'
+            }`}
           >
             <span className="material-symbols-outlined text-[20px]">bookmark</span>
+            <span className="hidden sm:inline">{t.save}</span>
           </button>
           <button 
             onClick={toggleDarkMode}
             aria-label="Toggle theme"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 sm:h-11 sm:w-11"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-[#111827] dark:text-slate-300 sm:h-11 sm:w-11"
           >
             <span className="material-symbols-outlined text-[22px]">
               {isDarkMode ? 'light_mode' : 'dark_mode'}

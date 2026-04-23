@@ -31,9 +31,9 @@ const validHexColor = /^#([0-9A-F]{6})$/i;
 const SPACING_DISPLAY_OFFSET = -50;
 
 const sectionClass =
-  'rounded-[1.3rem] border border-slate-200/80 bg-slate-50/80 p-2.5 dark:border-slate-800 dark:bg-slate-900/70';
+  'rounded-[1.3rem] border border-slate-200/80 bg-slate-50/80 p-2.5 dark:border-slate-700 dark:bg-[#151c28]/78';
 const mobileSectionClass =
-  'rounded-[1.3rem] border border-slate-200/80 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/70';
+  'rounded-[1.3rem] border border-slate-200/80 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-[#151c28]/78';
 
 const Toolbar: React.FC<ToolbarProps> = ({
   config,
@@ -142,15 +142,33 @@ const Toolbar: React.FC<ToolbarProps> = ({
     const isMobile = density === 'mobile';
 
     return (
-    <label className={`inline-flex items-center rounded-full border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950 ${isCompact ? 'gap-2 px-2.5 py-1.5' : isMobile ? 'gap-2.5 px-3 py-2' : 'gap-2 px-2.5 py-1.5'}`}>
-      <span className={`font-black text-slate-900 dark:text-white ${isCompact ? 'text-[11px]' : isMobile ? 'text-sm' : 'text-sm'}`}>{t.autoSquare}</span>
-      <input
-        type="checkbox"
-        checked={config.autoSquare}
-        onChange={(event) => onChange({ autoSquare: event.target.checked })}
-        className={`${isMobile ? 'h-4.5 w-4.5' : 'h-4 w-4'} rounded border-slate-300 text-indigo-600 focus:ring-indigo-500`}
-      />
-    </label>
+      <label
+        className={`inline-flex items-center rounded-full border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 ${
+          isCompact
+            ? 'min-w-[10.75rem] justify-between gap-4 px-4 py-2.5'
+            : isMobile
+              ? 'gap-2.5 px-3 py-2'
+              : 'gap-2 px-2.5 py-1.5'
+        }`}
+      >
+        <span className={`font-black text-slate-900 dark:text-white ${isCompact ? 'text-[1.05rem]' : isMobile ? 'text-sm' : 'text-sm'}`}>
+          {t.autoSquare}
+        </span>
+        <span className={`relative inline-flex shrink-0 items-center ${isCompact ? 'h-8 w-[3.7rem]' : isMobile ? 'h-7 w-12' : 'h-6 w-11'}`}>
+          <input
+            type="checkbox"
+            checked={config.autoSquare}
+            onChange={(event) => onChange({ autoSquare: event.target.checked })}
+            className="peer sr-only"
+          />
+          <span className="h-full w-full rounded-full bg-slate-200 transition-colors peer-checked:bg-indigo-600 dark:bg-slate-700 dark:peer-checked:bg-indigo-500" />
+          <span
+            className={`pointer-events-none absolute left-1 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-full ${
+              isCompact ? 'h-6 w-6' : isMobile ? 'h-5 w-5' : 'h-4 w-4'
+            }`}
+          />
+        </span>
+      </label>
     );
   };
 
@@ -172,28 +190,65 @@ const Toolbar: React.FC<ToolbarProps> = ({
   const renderTextControls = (density: ControlDensity = 'full') => {
     const isCompact = density === 'compact';
     const isMobile = density === 'mobile';
+    const controlHeight = isCompact ? 'h-[4.35rem]' : isMobile ? 'h-[3.4rem]' : 'h-[3.25rem]';
+    const sliderHeight = isCompact ? 'h-[10.8rem]' : isMobile ? 'h-[8.2rem]' : 'h-[8.1rem]';
+
+    const inputClass = `w-full rounded-2xl border border-slate-200 bg-white text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-[#111827] dark:text-white dark:focus:ring-indigo-500/20 ${
+      isCompact ? 'h-[4.35rem] rounded-[2rem] px-6 text-[2.15rem] font-black tracking-tight' : isMobile ? 'h-[3.4rem] px-4 text-lg' : 'h-[3.25rem] px-4 text-2xl'
+    }`;
+    const labelClass = `flex items-center justify-center font-black text-slate-500 dark:text-slate-300 ${
+      isCompact ? 'text-[1.95rem]' : isMobile ? 'text-base' : 'text-lg'
+    }`;
 
     return (
-    <div className="flex flex-col gap-2">
-      <label className="flex flex-col gap-1.5">
-        <span className={`font-bold text-slate-500 dark:text-slate-400 ${isCompact ? 'text-xs' : isMobile ? 'text-sm' : 'text-sm'}`}>{t.topText}</span>
-        <input
-          className={`w-full rounded-2xl border border-slate-200 bg-white text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-indigo-500/20 ${isCompact ? 'px-3 py-2 text-base' : isMobile ? 'px-4 py-3 text-lg' : 'px-4 py-4 text-2xl'}`}
-          type="text"
-          value={config.textTop}
-          onChange={(event) => onChange({ textTop: event.target.value })}
-        />
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className={`font-bold text-slate-500 dark:text-slate-400 ${isCompact ? 'text-xs' : isMobile ? 'text-sm' : 'text-sm'}`}>{t.bottomText}</span>
-        <input
-          className={`w-full rounded-2xl border border-slate-200 bg-white text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-indigo-500/20 ${isCompact ? 'px-3 py-2 text-base' : isMobile ? 'px-4 py-3 text-lg' : 'px-4 py-4 text-2xl'}`}
-          type="text"
-          value={config.textBottom}
-          onChange={(event) => onChange({ textBottom: event.target.value })}
-        />
-      </label>
-    </div>
+      <div className={`grid ${isCompact ? 'grid-cols-[minmax(0,1fr)_5.75rem] items-start gap-5' : isMobile ? 'grid-cols-[minmax(0,1fr)_3.25rem] items-stretch gap-4' : 'grid-cols-[minmax(0,1fr)_2.7rem] items-stretch gap-4'}`}>
+        <div className={`flex flex-col ${isCompact ? 'gap-3' : 'gap-2'}`}>
+          <label className={`grid items-center gap-3 ${isCompact ? 'grid-cols-[3.15rem_minmax(0,1fr)]' : isMobile ? 'grid-cols-[1.9rem_minmax(0,1fr)]' : 'grid-cols-[1.5rem_minmax(0,1fr)]'}`}>
+            <span className={`${labelClass} ${controlHeight}`}>{t.topText}</span>
+            <input
+              className={inputClass}
+              type="text"
+              value={config.textTop}
+              onChange={(event) => onChange({ textTop: event.target.value })}
+            />
+          </label>
+          <label className={`grid items-center gap-3 ${isCompact ? 'grid-cols-[3.15rem_minmax(0,1fr)]' : isMobile ? 'grid-cols-[1.9rem_minmax(0,1fr)]' : 'grid-cols-[1.5rem_minmax(0,1fr)]'}`}>
+            <span className={`${labelClass} ${controlHeight}`}>{t.bottomText}</span>
+            <input
+              className={inputClass}
+              type="text"
+              value={config.textBottom}
+              onChange={(event) => onChange({ textBottom: event.target.value })}
+            />
+          </label>
+        </div>
+
+        <div className={`justify-self-end rounded-[2rem] border border-slate-200 bg-white/85 dark:border-slate-700 dark:bg-[#111827] ${isCompact ? 'relative h-[12rem] w-[5.75rem] px-2 py-3' : 'flex flex-col items-center justify-between px-1 py-2'}`}>
+          <span className={`font-black text-slate-400 dark:text-slate-500 ${isCompact ? 'absolute left-1/2 top-4 -translate-x-1/2 text-[1rem] leading-none' : 'text-[11px]'}`}>
+            {t.topText}
+          </span>
+          {!isCompact && (
+            <span className="font-black text-[11px] text-slate-400 dark:text-slate-500">
+              {config.lineSizeBalance}
+            </span>
+          )}
+          <div className={`flex items-center justify-center ${sliderHeight} ${isCompact ? 'pt-8 pb-8' : ''}`}>
+            <input
+              type="range"
+              min={-50}
+              max={50}
+              step={5}
+              value={config.lineSizeBalance}
+              aria-label={t.lineSizeBalance}
+              onChange={(event) => onChange({ lineSizeBalance: parseInt(event.target.value, 10) })}
+              className={`-rotate-90 accent-indigo-600 ${isCompact ? 'w-[8.55rem]' : 'w-[6.4rem]'} ${isMobile ? 'mobile-range' : ''}`}
+            />
+          </div>
+          <span className={`font-black text-slate-400 dark:text-slate-500 ${isCompact ? 'absolute bottom-4 left-1/2 -translate-x-1/2 text-[1rem] leading-none' : 'text-[11px]'}`}>
+            {t.bottomText}
+          </span>
+        </div>
+      </div>
     );
   };
 
@@ -265,7 +320,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           type="checkbox"
           checked={enabled}
           onChange={(event) => onChange({ [`${key}Enabled`]: event.target.checked } as Partial<EmojiConfig>)}
-          className={`${isMobile ? 'h-5.5 w-5.5' : 'h-5 w-5'} rounded border-slate-300 text-indigo-600 focus:ring-indigo-500`}
+          className={`${isMobile ? 'h-[1.375rem] w-[1.375rem]' : 'h-5 w-5'} rounded border-slate-300 text-indigo-600 focus:ring-indigo-500`}
         />
       </div>
 
@@ -314,12 +369,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
   const renderColorControls = (density: ControlDensity = 'full') => {
     const isCompact = density === 'compact';
     const isMobile = density === 'mobile';
-    const dotSize = isCompact ? 'h-[1.55rem] w-[1.55rem]' : isMobile ? 'h-[1.8rem] w-[1.8rem]' : 'h-[1.55rem] w-[1.55rem]';
+    const dotSize = isCompact ? 'h-6 w-6' : isMobile ? 'h-[1.8rem] w-[1.8rem]' : 'h-[1.55rem] w-[1.55rem]';
+    const colorPickerSize = isCompact ? 'h-8 w-8' : isMobile ? 'h-10 w-10' : 'h-9 w-9';
 
     return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3">
-        <div className={`overflow-hidden rounded-xl border border-slate-200 shadow-sm dark:border-slate-700 ${isMobile ? 'h-10 w-10' : 'h-9 w-9'}`}>
+        <div className={`overflow-hidden rounded-xl border border-slate-200 shadow-sm dark:border-slate-700 ${colorPickerSize}`}>
           <input
             type="color"
             value={config.mainColor}
@@ -380,7 +436,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                   ? isActive
                     ? 'border-indigo-600 shadow-lg shadow-indigo-500/20'
                     : 'border-transparent'
-                  : 'border-dashed border-slate-300 bg-slate-100/80 dark:border-slate-700 dark:bg-slate-900'
+                  : 'border-dashed border-slate-300 bg-slate-100/80 dark:border-slate-700 dark:bg-[#111827]'
               }`}
               style={hasColor ? { backgroundColor: color } : undefined}
               title={hasColor ? color : config.mainColor}
@@ -415,18 +471,18 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
   return (
     <>
-      <section className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/95 lg:hidden">
+      <section className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-slate-700 dark:bg-[#151c28]/95 lg:hidden">
         <div className="px-4 pt-3">
           <div className="mx-auto h-1.5 w-14 rounded-full bg-slate-300/80 dark:bg-slate-700/80" />
         </div>
 
-        <div className="border-b border-slate-200/80 px-4 py-2 dark:border-slate-800 sm:px-5">
+        <div className="border-b border-slate-200/80 px-4 py-2 dark:border-slate-700 sm:px-5">
           <div className="flex items-center justify-between gap-3">
             <div />
             <button
               onClick={() => setIsMobileOpen((prev) => !prev)}
               aria-label={isMobileOpen ? t.collapseEditor : t.expandEditor}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-[#111827] dark:text-slate-300"
             >
               <span className={`material-symbols-outlined text-[20px] transition-transform ${isMobileOpen ? '' : 'rotate-180'}`}>
                 expand_more
@@ -436,7 +492,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
         </div>
 
         <div className={`${isMobileOpen ? 'block' : 'hidden'}`}>
-          <div className="border-b border-slate-200/80 px-2 py-1.5 dark:border-slate-800">
+          <div className="border-b border-slate-200/80 px-2 py-1.5 dark:border-slate-700">
             <div className="grid grid-cols-5 gap-1.5">
               {tabs.map((tab) => (
                 <button
@@ -455,7 +511,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
             </div>
           </div>
 
-          <div className="h-[40vh] overflow-y-auto px-4 py-3 sm:h-[42vh] sm:px-5">
+          <div className="h-[34vh] overflow-y-auto px-4 py-3 sm:h-[35vh] sm:px-5">
             {activeTab === 'text' && (
               <div className={`${mobileSectionClass} min-h-full`}>
                 <div className="mb-2 flex items-center justify-between gap-3">
@@ -519,16 +575,21 @@ const Toolbar: React.FC<ToolbarProps> = ({
         </div>
       </section>
 
-      <section className="hidden overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/95 shadow-[0_18px_45px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/90 lg:block">
+      <section className="hidden overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/95 shadow-[0_18px_45px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-700 dark:bg-[#151c28]/92 lg:block">
         <div className="p-3">
-          <div className="grid gap-2 xl:grid-cols-[1.14fr_0.95fr_1.05fr_1.7fr_0.95fr]">
+          <div className="grid gap-2 xl:grid-cols-[1.36fr_0.92fr_0.86fr_1.14fr_0.9fr]">
             <div className={sectionClass}>
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">1</span>
-                  <p className="text-sm font-black text-slate-900 dark:text-white">{t.inputLabel}</p>
+              <div className="mb-4 grid grid-cols-[minmax(0,1fr)_5.75rem] gap-5">
+                <div className="border-b border-slate-200/90 pb-3 dark:border-slate-700/80">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-[1.55rem] font-black text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">1</span>
+                      <p className="text-[2rem] font-black tracking-tight text-slate-900 dark:text-white">{t.inputLabel}</p>
+                    </div>
+                    {renderAutoSquareToggle('compact')}
+                  </div>
                 </div>
-                {renderAutoSquareToggle('compact')}
+                <div />
               </div>
               {renderTextControls('compact')}
             </div>
@@ -546,7 +607,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">3</span>
                 <p className="text-sm font-black text-slate-900 dark:text-white">{t.fill}</p>
               </div>
-              {renderColorControls()}
+              {renderColorControls('compact')}
             </div>
 
             <div className={sectionClass}>
@@ -554,7 +615,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">4</span>
                 <p className="text-sm font-black text-slate-900 dark:text-white">{lang === 'jp' ? '線' : 'Stroke'}</p>
               </div>
-              <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3">
+              <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2.5">
                 <div>
                   {renderBorderControls('stroke1', t.stroke1Label, config.stroke1Enabled, config.stroke1Color, config.stroke1Width, 'compact')}
                 </div>

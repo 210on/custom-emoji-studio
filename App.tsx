@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Header from './components/Header';
+import SavedStylesPanel from './components/SavedStylesPanel';
 import Toolbar from './components/Toolbar';
 import PreviewSection from './components/PreviewSection';
 import { EmojiConfig, ScoreMetrics, Language, SavedEmoji } from './types';
@@ -20,6 +21,7 @@ interface PreviewSurfaceState {
 const defaultConfig: EmojiConfig = {
   textTop: 'あり',
   textBottom: 'がと',
+  lineSizeBalance: 0,
   fontFamily: "'Noto Sans JP', sans-serif",
   fontWeight: 900,
   condense: 100,
@@ -44,16 +46,29 @@ const defaultMetrics: ScoreMetrics = {
 
 const defaultPreviewSurfaces: PreviewSurfaceState = {
   light: '#FFFFFF',
-  dark: '#0B1120',
-  customLight: '#EEF2FF',
-  customDark: '#222529',
+  dark: '#1D1C1D',
+  customLight: '#EEF3FA',
+  customDark: '#2B2D31',
 };
 
 const clampStrokeWidth = (value: number) => Math.max(0, Math.min(MAX_STROKE_WIDTH, value));
 
+const normalizeLineSizeBalance = (value: unknown) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 0;
+  }
+
+  if (value >= -2 && value <= 2 && Number.isInteger(value)) {
+    return value * 25;
+  }
+
+  return Math.max(-50, Math.min(50, Math.round(value / 5) * 5));
+};
+
 const normalizeSavedEmoji = (saved: SavedEmoji): EmojiConfig => ({
   textTop: saved.textTop,
   textBottom: saved.textBottom,
+  lineSizeBalance: normalizeLineSizeBalance(saved.lineSizeBalance),
   fontFamily: saved.fontFamily,
   fontWeight: saved.fontWeight,
   condense: saved.condense,
@@ -68,6 +83,11 @@ const normalizeSavedEmoji = (saved: SavedEmoji): EmojiConfig => ({
   stroke2Width: clampStrokeWidth(saved.stroke2Width),
   autoSquare: saved.autoSquare,
   spacing: saved.spacing ?? DEFAULT_SPACING,
+});
+
+const normalizeSavedHistoryItem = (saved: SavedEmoji): SavedEmoji => ({
+  ...saved,
+  ...normalizeSavedEmoji(saved),
 });
 
 const loadStoredState = () => {
@@ -193,6 +213,9 @@ const App: React.FC = () => {
   const [config, setConfig] = useState<EmojiConfig>({
     ...defaultConfig,
     ...(storedState?.config ?? {}),
+    lineSizeBalance: normalizeLineSizeBalance(
+      storedState?.config?.lineSizeBalance ?? defaultConfig.lineSizeBalance,
+    ),
     stroke1Width: clampStrokeWidth(storedState?.config?.stroke1Width ?? defaultConfig.stroke1Width),
     stroke2Width: clampStrokeWidth(storedState?.config?.stroke2Width ?? defaultConfig.stroke2Width),
   });
@@ -203,7 +226,12 @@ const App: React.FC = () => {
     normalizePreviewSurfaces(storedState?.previewSurfaces),
   );
   const [metrics, setMetrics] = useState<ScoreMetrics>(defaultMetrics);
-  const [history, setHistory] = useState<SavedEmoji[]>(storedState?.history ?? []);
+  const [history, setHistory] = useState<SavedEmoji[]>(
+    Array.isArray(storedState?.history)
+      ? storedState.history.map(normalizeSavedHistoryItem)
+      : [],
+  );
+  const [isSavedStylesOpen, setIsSavedStylesOpen] = useState(false);
   const [aiTip, setAiTip] = useState<string>(
     storedState?.lang === 'en'
       ? 'The AI feedback updates automatically when you change the design.'
@@ -241,6 +269,11 @@ const App: React.FC = () => {
     };
 
     setHistory((prev) => [newSaved, ...prev].slice(0, 12));
+  };
+
+  const handleSelectSavedStyle = (saved: SavedEmoji) => {
+    setConfig(normalizeSavedEmoji(saved));
+    setIsSavedStylesOpen(false);
   };
 
   const performMathAnalysis = useCallback(() => {
@@ -292,7 +325,10 @@ const App: React.FC = () => {
     config.mainColor,
     config.fontFamily,
     config.fontWeight,
+    config.autoSquare,
+    config.condense,
     config.spacing,
+    config.lineSizeBalance,
     config.stroke1Enabled,
     config.stroke1Color,
     config.stroke1Width,
@@ -313,7 +349,17 @@ const App: React.FC = () => {
           lang={lang}
           toggleLang={() => setLang((prev) => (prev === 'en' ? 'jp' : 'en'))}
           onExport={() => previewRef.current?.exportPng()}
-          onSave={handleSave}
+          onToggleSavedStyles={() => setIsSavedStylesOpen((prev) => !prev)}
+          isSavedStylesOpen={isSavedStylesOpen}
+        />
+
+        <SavedStylesPanel
+          isOpen={isSavedStylesOpen}
+          items={history}
+          lang={lang}
+          onClose={() => setIsSavedStylesOpen(false)}
+          onSaveCurrent={handleSave}
+          onSelect={handleSelectSavedStyle}
         />
 
         <div className="flex-1 min-h-0 overflow-hidden px-3 py-3 pb-[18.75rem] sm:px-5 sm:py-4 sm:pb-[19.25rem] lg:px-6 lg:py-4 lg:pb-4">
@@ -330,10 +376,8 @@ const App: React.FC = () => {
               ref={previewRef}
               config={config}
               lang={lang}
-              history={history}
               previewSurfaces={previewSurfaces}
               onPreviewSurfacesChange={setPreviewSurfaces}
-              onSelectHistory={(saved) => setConfig(normalizeSavedEmoji(saved))}
               metrics={metrics}
               aiTip={aiTip}
               isAnalyzing={isAnalyzing}

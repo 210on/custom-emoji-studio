@@ -2,10 +2,10 @@ import React, {
   useImperativeHandle,
   forwardRef,
   useEffect,
+  useMemo,
   useRef,
-  useState,
 } from 'react';
-import { EmojiConfig, Language, SavedEmoji, ScoreMetrics } from '../types';
+import { EmojiConfig, Language, ScoreMetrics } from '../types';
 import { locales } from '../locales';
 import ChatPreview from './ChatPreview';
 import DesignDiagnosis from './DesignDiagnosis';
@@ -14,44 +14,69 @@ import { renderEmojiToCanvas, trimTransparentBounds, waitForFonts } from '../uti
 interface PreviewSectionProps {
   config: EmojiConfig;
   lang: Language;
-  history: SavedEmoji[];
   previewSurfaces: {
     light: string;
     dark: string;
     customLight: string;
     customDark: string;
   };
-  onPreviewSurfacesChange: React.Dispatch<React.SetStateAction<{
+      onPreviewSurfacesChange: React.Dispatch<React.SetStateAction<{
     light: string;
     dark: string;
     customLight: string;
     customDark: string;
   }>>;
-  onSelectHistory: (config: SavedEmoji) => void;
   metrics: ScoreMetrics;
   aiTip: string;
   isAnalyzing: boolean;
   onRefreshAi: () => void;
 }
 
-type WorkspaceTab = 'chat' | 'history';
-
 const previewCards = [
   {
     id: 'light',
     label: 'Light',
     titleKey: 'lightPreview',
-    presetColors: ['#FFFFFF', '#F2F3F5', '#F7F1E8', '#EDF4FF'],
+    presetColors: ['#FFFFFF', '#F2F3F5', '#F7F4EE', '#EEF3FA'],
     customKey: 'customLight',
   },
   {
     id: 'dark',
     label: 'Dark',
     titleKey: 'darkPreview',
-    presetColors: ['#0B1120', '#1F2329', '#2A211B', '#162131'],
+    presetColors: ['#1D1C1D', '#23262B', '#2B2D31', '#111214'],
     customKey: 'customDark',
   },
 ] as const;
+
+const buildChatSurfaceCandidates = (previewSurfaces: PreviewSectionProps['previewSurfaces']) => {
+  const ordered: string[] = [];
+  const pushUnique = (value: string) => {
+    const normalized = value.toUpperCase();
+    if (!ordered.includes(normalized)) {
+      ordered.push(normalized);
+    }
+  };
+
+  if (previewSurfaces.light === previewSurfaces.customLight) {
+    pushUnique(previewSurfaces.customLight);
+  }
+
+  if (previewSurfaces.dark === previewSurfaces.customDark) {
+    pushUnique(previewSurfaces.customDark);
+  }
+
+  pushUnique(previewSurfaces.light);
+  pushUnique(previewSurfaces.dark);
+  pushUnique(previewSurfaces.customLight);
+  pushUnique(previewSurfaces.customDark);
+
+  previewCards.forEach((card) => {
+    card.presetColors.forEach((color) => pushUnique(color));
+  });
+
+  return ordered;
+};
 
 const getIconColorForBackground = (hex: string) => {
   const normalized = hex.replace('#', '');
@@ -87,7 +112,7 @@ const PreviewCanvas: React.FC<{ config: EmojiConfig; bg: string; size?: number }
 
   return (
     <div
-      className="flex h-[16vh] min-h-[118px] min-w-0 items-center justify-center overflow-hidden rounded-[1.25rem] border border-slate-200/70 p-1.5 shadow-inner dark:border-slate-800 sm:min-h-[190px] lg:h-full lg:min-h-0"
+      className="flex h-[16.5vh] min-h-[128px] min-w-0 items-center justify-center overflow-hidden rounded-[1.25rem] border border-slate-200/70 p-1.5 shadow-inner dark:border-slate-700 sm:min-h-[190px] lg:h-full lg:min-h-[316px]"
       style={{ backgroundColor: bg }}
     >
       <canvas ref={canvasRef} width={size} height={size} className="h-full w-full min-w-0 object-contain" />
@@ -98,18 +123,18 @@ const PreviewCanvas: React.FC<{ config: EmojiConfig; bg: string; size?: number }
 const PreviewSection = forwardRef<{ exportPng: () => void }, PreviewSectionProps>(({
   config,
   lang,
-  history,
   previewSurfaces,
   onPreviewSurfacesChange,
-  onSelectHistory,
   metrics,
   aiTip,
   isAnalyzing,
   onRefreshAi,
 }, ref) => {
   const t = locales[lang];
-  const workspaceRef = useRef<HTMLDivElement>(null);
-  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>('chat');
+  const chatSurfaceCandidates = useMemo(
+    () => buildChatSurfaceCandidates(previewSurfaces),
+    [previewSurfaces],
+  );
 
   const exportPng = async () => {
     const canvas = document.createElement('canvas');
@@ -130,31 +155,11 @@ const PreviewSection = forwardRef<{ exportPng: () => void }, PreviewSectionProps
     link.click();
   };
 
-  const scrollToWorkspace = (nextTab: WorkspaceTab) => {
-    const container = workspaceRef.current;
-    if (!container) return;
-
-    const index = nextTab === 'chat' ? 0 : 1;
-    container.scrollTo({
-      left: container.clientWidth * index,
-      behavior: 'smooth',
-    });
-    setWorkspaceTab(nextTab);
-  };
-
-  const handleWorkspaceScroll = () => {
-    const container = workspaceRef.current;
-    if (!container) return;
-
-    const index = Math.round(container.scrollLeft / Math.max(container.clientWidth, 1));
-    setWorkspaceTab(index === 0 ? 'chat' : 'history');
-  };
-
   useImperativeHandle(ref, () => ({ exportPng }));
 
   return (
-    <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:grid-rows-[auto_minmax(0,1fr)]">
-      <section className="min-w-0 rounded-[1.8rem] border border-slate-200/80 bg-white/92 p-3 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/92 lg:row-span-2 lg:flex lg:min-h-0 lg:flex-col">
+    <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_332px]">
+      <section className="min-w-0 rounded-[1.8rem] border border-slate-200/80 bg-white/92 p-3 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-700 dark:bg-[#151c28]/94 lg:flex lg:min-h-0 lg:flex-col">
         <div className="grid min-h-0 min-w-0 grid-cols-2 gap-2 lg:flex-1 lg:gap-3">
           {previewCards.map((card) => (
             <div key={card.id} className="flex min-h-0 min-w-0 flex-col gap-2">
@@ -220,74 +225,19 @@ const PreviewSection = forwardRef<{ exportPng: () => void }, PreviewSectionProps
         </div>
       </section>
 
-      <DesignDiagnosis
-        metrics={metrics}
-        tip={aiTip}
-        isAnalyzing={isAnalyzing}
-        onRefresh={onRefreshAi}
-        lang={lang}
-      />
+      <aside className="flex min-h-0 min-w-0 flex-col gap-3">
+        <DesignDiagnosis
+          metrics={metrics}
+          tip={aiTip}
+          isAnalyzing={isAnalyzing}
+          onRefresh={onRefreshAi}
+          lang={lang}
+        />
 
-      <section className="min-h-0 min-w-0 overflow-hidden rounded-[1.7rem] border border-slate-200/80 bg-white/92 p-3 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/92">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <div className="grid grid-cols-2 rounded-full bg-slate-100 p-1 dark:bg-slate-900">
-            {([
-              { key: 'chat', label: t.chatTab },
-              { key: 'history', label: t.historyTab },
-            ] as const).map((item) => (
-              <button
-                key={item.key}
-                onClick={() => scrollToWorkspace(item.key)}
-                className={`rounded-full px-3 py-1.5 text-xs font-black transition ${
-                  workspaceTab === item.key
-                    ? 'bg-white text-indigo-600 shadow-sm dark:bg-slate-800 dark:text-indigo-400'
-                    : 'text-slate-500 dark:text-slate-400'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div
-          ref={workspaceRef}
-          onScroll={handleWorkspaceScroll}
-          className="flex h-[110px] snap-x snap-mandatory overflow-x-auto scroll-smooth no-scrollbar lg:h-[150px]"
-        >
-          <div className="min-w-full snap-center pr-1">
-            <ChatPreview config={config} lang={lang} />
-          </div>
-
-          <div className="min-w-full snap-center pl-1">
-            {history.length === 0 ? (
-              <div className="flex h-full items-center justify-center rounded-[1.4rem] border border-dashed border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/50">
-                <span className="text-xl font-black text-slate-300 dark:text-slate-700">—</span>
-              </div>
-            ) : (
-              <div className="grid h-full grid-cols-2 gap-2 overflow-hidden">
-                {history.slice(0, 4).map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => onSelectHistory(item)}
-                    className="min-w-0 rounded-[1.2rem] border border-slate-200 bg-slate-50 p-2 text-left transition hover:border-indigo-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-900"
-                  >
-                    <div className="flex h-full items-center justify-center rounded-[1rem] bg-white dark:bg-slate-950">
-                      <div
-                        className="flex min-w-0 flex-col items-center leading-none"
-                        style={{ color: item.mainColor, fontFamily: item.fontFamily }}
-                      >
-                        <span className="truncate text-lg font-black">{item.textTop}</span>
-                        <span className="truncate text-lg font-black">{item.textBottom}</span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+        <section className="min-h-0 min-w-0 overflow-hidden rounded-[1.7rem] border border-slate-200/80 bg-white/92 p-3 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-700 dark:bg-[#151c28]/94">
+          <ChatPreview config={config} lang={lang} surfaceCandidates={chatSurfaceCandidates} />
+        </section>
+      </aside>
     </main>
   );
 });
